@@ -12,23 +12,43 @@ async function startApolloServer() {
 
     // Type Definitions and Resolvers
     const typeDefs = `
+    type User{
+        id: ID!
+        name: String!
+        username: String!
+        email: String!
+        }
         type Todo {
             id: ID!
             title: String!
             completed: Boolean!
+            userId: ID!
+            user: User
         }
 
         type Query {
             getTodos: [Todo]
+            getAllUsers: [User]
+            getTodosByUserId(userId: ID!): [Todo]
+            getUser(id: ID!): User
         }
     `;
 
     const resolvers = {
+        Todo: {
+            user: async (parent) => (await axios.get(`https://jsonplaceholder.typicode.com/users/${parent.userId}`)).data,
+        },  v 
         Query: {
-            getTodos: async () =>(await axios.get('https://jsonplaceholder.typicode.com/todos')).data,
+            getTodos: async () => (await axios.get('https://jsonplaceholder.typicode.com/todos')).data,
+            getAllUsers: async () => (await axios.get('https://jsonplaceholder.typicode.com/users')).data,
+            getUser: async (_, { id }) => (await axios.get(`https://jsonplaceholder.typicode.com/users/${id}`)).data,
+            getTodosByUserId: async (_, { userId }) => {
+                const todos = (await axios.get('https://jsonplaceholder.typicode.com/todos')).data;
+                return todos.filter(todo => todo.userId == userId);
+            },
         },
     };
-
+    
     // Apollo Server
     const server = new ApolloServer({
         typeDefs,
